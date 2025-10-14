@@ -13,6 +13,10 @@ execute:
 
 ## Challenge Overview
 
+## Introduction {#sec-introduction}
+
+See @sec-introduction for the discussion questions.
+
 **Your Mission:** Create a simple GitHub Pages site that demonstrates how decision trees measure feature importance and analyzes the critical differences between categorical and numerical variable encoding. You'll answer two key discussion questions by adding narrative to a pre-built analysis and posting those answers to your GitHub Pages site as a rendered HTML document.
 
 ::: {.callout-warning}
@@ -562,15 +566,27 @@ plt.show()
 *Remember: Frequent commits are your safety net!*
 :::
 
-## Discussion Questions for Challenge
+## Discussion Questions for Challenge {#sec-discussion-questions}
 
 **Your Task:** Add thoughtful narrative answers to these two questions in the Discussion Questions section of your rendered HTML site.
 
 1. **Numerical vs Categorical Encoding:** There are four models above, two in R and two in Python. For each language, the models differ by how zip code is modelled, either as a numerical variable or as a categorical variable. Given what you know about zip codes and real estate prices, how should zip code be modelled, numerically or categorically?
 
+A zip code should be modelled as a catgorical variable. Even though zip codes are represented as numbers, you cannot have negative zip codes, add zip codes, find average zip codes, etc. If my home zip code is 08094 and my zipcode at school is 19711, it means nothing to add them or compare the two. 19711 zimply means the Newark area in Delaware, and 08094 means the Williamstown area in New Jersey. When you are making decisions with categorical data, it is not about the numbers, it is about the categories. For zip codes, it could mean, "Do I want to live in the Williamstown area or the Newark area?" Not the area that is 19711 because it is a higher number. When it comes to the zip codes, it is more about the frequency of the zip codes in the area rather than the numbers themselves. 
+
 2. **R vs Python Implementation Differences:** When modelling zip code as a categorical variable, the output tree and feature importance differs quite significantly between R and Python. Investigate why this is the case. Which language would you say does a better job of modelling zip code as a categorical variable? Why is this the case? Do you see any documentation suggesting the other language does a better job? If so, please provide a quote from the documentation.
 
-::: {.callout-important}
+The reason for the difference is when using the Python code (numerical), the decision tree took into account the zip codes that were not clearly categorized. For instance, the zip code 19711.11 could be used within the analysis, even if there is no clear area that aligns with this zip code. When using the R code (categorical), all the numbers are properly categorized, so the decision tree did not take into account the zip codes that were not clearly categorized. That is why the R code actually has less values than the Python code. The code that shows the R Studio code is doing a better job is:
+
+importance_cat <- data.frame(
+  Feature = names(tree_model_cat$variable.importance),
+  Importance = as.numeric(tree_model_cat$variable.importance)
+) %>%
+  arrange(desc(Importance)) %>%
+  mutate(Importance_Percent = round(Importance / sum(Importance) * 100, 2))
+
+This shows the importance feature which creates the best split for the decision tree.
+
 ## 📋 Important Note on AI Usage
 
 **No coding assistance expected:** This challenge is designed for independent analysis and critical thinking. You are **not** expected to use AI for coding help or to write code for you. You are **not** expected to code at all unless curious about any ideas you may have. 
@@ -602,6 +618,8 @@ plt.show()
 ### Questions to Answer for 75% Grade on Challenge
 
 1. **Numerical vs Categorical Analysis:** Provide a clear, well-reasoned answer to question 1 about how zip codes should be modelled. Your answer should demonstrate understanding of why categorical variables need special treatment in decision trees.
+
+
 
 ### Questions to Answer for 85% Grade on Challenge
 

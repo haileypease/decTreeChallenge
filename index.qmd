@@ -56,57 +56,6 @@ We are analyzing the Ames Housing dataset which contains detailed information ab
 
 ## Data Loading and Model Building
 
-::: {.callout-important}
-## 🎯 Note on Python Usage
-
-You have not been coached through setting up a Python environment.  You will need to set up a Python environment and install the necessary packages to run this code - takes about 15 minutes; see [https://quarto.org/docs/projects/virtual-environments.html](https://quarto.org/docs/projects/virtual-environments.html).  Alternatively, delete the Python code and only leave the remaining R code that is provided.  You can see the executed Python output at my GitHub pages site: [https://flyaflya.github.io/decTreeChallenge/](https://flyaflya.github.io/decTreeChallenge/).
-
-:::
-
-::: {.panel-tabset}
-
-### R
-
-```{r}
-#| label: load-and-model-r
-#| echo: true
-#| message: false
-#| warning: false
-
-# Load libraries
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(rpart))
-if (!require(rpart.plot, quietly = TRUE)) {
-  install.packages("rpart.plot", repos = "https://cran.rstudio.com/")
-  library(rpart.plot)
-}
-
-# Load data
-sales_data <- read.csv("https://raw.githubusercontent.com/flyaflya/buad442Fall2025/refs/heads/main/datasets/salesPriceData.csv")
-
-# Prepare model data (treating zipCode as numerical)
-model_data <- sales_data %>%
-  select(SalePrice, LotArea, YearBuilt, GrLivArea, FullBath, HalfBath, 
-         BedroomAbvGr, TotRmsAbvGrd, GarageCars, zipCode) %>%
-  na.omit()
-
-# Split data
-set.seed(123)
-train_indices <- sample(1:nrow(model_data), 0.8 * nrow(model_data))
-train_data <- model_data[train_indices, ]
-test_data <- model_data[-train_indices, ]
-
-# Build decision tree
-tree_model <- rpart(SalePrice ~ ., 
-                    data = train_data,
-                    method = "anova",
-                    control = rpart.control(maxdepth = 3, 
-                                          minsplit = 20, 
-                                          minbucket = 10))
-
-cat("Model built with", sum(tree_model$frame$var == "<leaf>"), "terminal nodes\n")
-```
-
 ### Python
 
 ```{python}
@@ -123,7 +72,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Load data
-sales_data = pd.read_csv("https://raw.githubusercontent.com/flyaflya/buad442Fall2025/refs/heads/main/datasets/salesPriceData.csv")
+sales_data = pd.read_csv("salesPriceData.csv")
 
 # Prepare model data (treating zipCode as numerical)
 model_vars = ['SalePrice', 'LotArea', 'YearBuilt', 'GrLivArea', 'FullBath', 
@@ -145,36 +94,7 @@ tree_model.fit(X_train, y_train)
 print(f"Model built with {tree_model.get_n_leaves()} terminal nodes")
 ```
 
-:::
-
 ## Tree Visualization
-
-::: {.panel-tabset}
-
-### R
-
-```{r}
-#| label: visualize-tree-r
-#| echo: true
-#| message: false
-#| warning: false
-#| fig-width: 10
-#| fig-height: 6
-
-# Visualize tree
-if (require(rpart.plot, quietly = TRUE)) {
-  rpart.plot(tree_model, 
-             type = 2,
-             extra = 101,
-             fallen.leaves = TRUE,
-             digits = 0,
-             cex = 0.8,
-             main = "Decision Tree (zipCode as Numerical)")
-} else {
-  plot(tree_model, uniform = TRUE, main = "Decision Tree (zipCode as Numerical)")
-  text(tree_model, use.n = TRUE, all = TRUE, cex = 0.8)
-}
-```
 
 ### Python
 
@@ -200,47 +120,6 @@ plt.show()
 :::
 
 ## Feature Importance Analysis
-
-::: {.panel-tabset}
-
-### R
-
-```{r}
-#| label: feature-importance-r
-#| echo: false
-#| message: false
-#| warning: false
-
-# Extract and display feature importance
-importance_df <- data.frame(
-  Feature = names(tree_model$variable.importance),
-  Importance = as.numeric(tree_model$variable.importance)
-) %>%
-  arrange(desc(Importance)) %>%
-  mutate(Importance_Percent = round(Importance / sum(Importance) * 100, 2))
-
-# Check zipCode ranking
-zipcode_rank <- which(importance_df$Feature == "zipCode")
-zipcode_importance <- importance_df$Importance_Percent[zipcode_rank]
-```
-
-```{r}
-#| label: importance-plot-r
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-width: 8
-#| fig-height: 5
-
-# Plot feature importance
-library(ggplot2)
-ggplot(importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
-  geom_col(fill = "steelblue", alpha = 0.7) +
-  coord_flip() +
-  labs(title = "Feature Importance (zipCode as Numerical)",
-       x = "Features", y = "Importance Score") +
-  theme_minimal()
-```
 
 ### Python
 
@@ -279,8 +158,6 @@ plt.tight_layout()
 plt.show()
 ```
 
-:::
-
 ## Critical Analysis: The Encoding Problem
 
 ::: {.callout-warning}
@@ -299,54 +176,9 @@ plt.show()
 
 Now let's repeat the analysis with zipCode properly encoded as categorical variables to see the difference.
 
-**R Approach:** Convert zipCode to a factor (categorical variable)  
 **Python Approach:** One-hot encode zipCode (create dummy variables for each zip code)
 
 ### Categorical Encoding Analysis
-
-::: {.panel-tabset}
-
-### R
-
-```{r}
-#| label: categorical-r
-#| echo: true
-#| message: false
-#| warning: false
-
-
-# Convert zipCode to factor (categorical)
-model_data_cat <- model_data %>%
-  mutate(zipCode = as.factor(zipCode))
-
-# Split data
-set.seed(123)
-train_indices_cat <- sample(1:nrow(model_data_cat), 0.8 * nrow(model_data_cat))
-train_data_cat <- model_data_cat[train_indices_cat, ]
-test_data_cat <- model_data_cat[-train_indices_cat, ]
-
-# Build decision tree with categorical zipCode
-tree_model_cat <- rpart(SalePrice ~ ., 
-                        data = train_data_cat,
-                        method = "anova",
-                        control = rpart.control(maxdepth = 3, 
-                                              minsplit = 20, 
-                                              minbucket = 10))
-
-# Feature importance with categorical zipCode
-importance_cat <- data.frame(
-  Feature = names(tree_model_cat$variable.importance),
-  Importance = as.numeric(tree_model_cat$variable.importance)
-) %>%
-  arrange(desc(Importance)) %>%
-  mutate(Importance_Percent = round(Importance / sum(Importance) * 100, 2))
-
-# Check if zipCode appears in tree
-zipcode_in_tree <- "zipCode" %in% names(tree_model_cat$variable.importance)
-if(zipcode_in_tree) {
-  zipcode_rank_cat <- which(importance_cat$Feature == "zipCode")
-}
-```
 
 ### Python
 
@@ -388,36 +220,7 @@ total_importance = importance_cat_df['Importance'].sum()
 zipcode_percent = (zipcode_importance / total_importance * 100).round(2)
 ```
 
-:::
-
 ### Tree Visualization: Categorical zipCode
-
-::: {.panel-tabset}
-
-### R
-
-```{r}
-#| label: visualize-tree-cat-r
-#| echo: true
-#| message: false
-#| warning: false
-#| fig-width: 10
-#| fig-height: 6
-
-# Visualize tree with categorical zipCode
-if (require(rpart.plot, quietly = TRUE)) {
-  rpart.plot(tree_model_cat, 
-             type = 2,
-             extra = 101,
-             fallen.leaves = TRUE,
-             digits = 0,
-             cex = 0.8,
-             main = "Decision Tree (zipCode as Categorical)")
-} else {
-  plot(tree_model_cat, uniform = TRUE, main = "Decision Tree (zipCode as Categorical)")
-  text(tree_model_cat, use.n = TRUE, all = TRUE, cex = 0.8)
-}
-```
 
 ### Python
 
@@ -440,34 +243,9 @@ plt.tight_layout()
 plt.show()
 ```
 
-:::
-
 ### Feature Importance: Categorical zipCode
 
-::: {.panel-tabset}
-
-### R
-
-```{r}
-#| label: importance-plot-cat-r
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-width: 8
-#| fig-height: 5
-
-# Plot feature importance for categorical zipCode
-library(ggplot2)
-ggplot(importance_cat, aes(x = reorder(Feature, Importance), y = Importance)) +
-  geom_col(fill = "darkgreen", alpha = 0.7) +
-  coord_flip() +
-  labs(title = "Feature Importance (zipCode as Categorical)",
-       x = "Features", y = "Importance Score") +
-  theme_minimal()
-```
-
 ### Python
-
 ```{python}
 #| label: importance-plot-cat-python
 #| echo: false
@@ -485,8 +263,6 @@ plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.show()
 ```
-
-:::
 
 ## Challenge Requirements 📋
 
@@ -566,19 +342,11 @@ plt.show()
 
 **Your Task:** Add thoughtful narrative answers to these two questions in the Discussion Questions section of your rendered HTML site.
 
-1. **Numerical vs Categorical Encoding:** There are four models above, two in R and two in Python. For each language, the models differ by how zip code is modelled, either as a numerical variable or as a categorical variable. Given what you know about zip codes and real estate prices, how should zip code be modelled, numerically or categorically?
+1. **Numerical vs Categorical Encoding:** There are two modelsin Python written above. For each language, the models differ by how zip code is modelled, either as a numerical variable or as a categorical variable. Given what you know about zip codes and real estate prices, how should zip code be modelled, numerically or categorically?  Is zipcode and ordinal or non-ordinal variable?
 
-2. **R vs Python Implementation Differences:** When modelling zip code as a categorical variable, the output tree and feature importance differs quite significantly between R and Python. Investigate why this is the case. Which language would you say does a better job of modelling zip code as a categorical variable? Why is this the case? Do you see any documentation suggesting the other language does a better job? If so, please provide a quote from the documentation.
+2. **R vs Python Implementation Differences:** When modelling zip code as a categorical variable, the output tree and feature importance would differ quite significantly had you used R as opposed to Python. Investigate why this is the case.  What does R offer that Python does not? Which language would you say does a better job of modelling zip code as a categorical variable? Can you quote the documentation at [https://scikit-learn.org/stable/modules/tree.html](https://scikit-learn.org/stable/modules/tree.html) suggesting a weakness in the Python implementation? If so, please provide a quote from the documentation.
 
-::: {.callout-important}
-## 📋 Important Note on AI Usage
-
-**No coding assistance expected:** This challenge is designed for independent analysis and critical thinking. You are **not** expected to use AI for coding help or to write code for you. You are **not** expected to code at all unless curious about any ideas you may have. 
-
-**AI as unreliable thought partner:** If you choose to use AI tools, treat them as an unreliable thought partner. AI responses should be verified and cross-checked rather than accepted at face value.
-
-**Documentation verification required:** For question 2, you must investigate the official documentation for both `rpart` (R) and `sklearn.tree.DecisionTreeRegressor` (Python) to understand why the two implementations yield vastly different results when handling categorical variables. Your analysis should be grounded in the actual documentation and technical specifications of these libraries, not AI-generated explanations. AI can be helpful in digesting the documentation, but you must verify the information is correct.
-:::
+3. **Are There Any Suggestions for Implementing Decision Trees in Python With Prioper Categorical Handling?** Please poke around the Internet (AI is not as helpful with new libraries) for suggestions on how to implement decision trees in Python with better (i.e. not one-hot encoding) categorical handling.  Please provide a link to the source and a quote from the source.  There is not right answer here, but please provide a thoughtful answer, I am curious to see what you find.
 
 ## Grading Rubric 🎓
 
@@ -596,7 +364,7 @@ plt.show()
 - **Human insights:** Your interpretation of what the feature importance rankings actually mean (or don't mean)
 - **Documentation-based analysis:** For question 2, ground your analysis in actual library documentation
 
-**What we're looking for:** A compelling 1-2 minute read that demonstrates both the power of decision trees for interpretability and the critical importance of proper variable encoding.
+**What we're looking for:** A compelling 1-2 minute read that demonstrates both the power of decision trees for interpretability and the critical importance of proper variable encoding.  And a note on the current state of the art in decision tree implementation for categorical variables in Python.
 :::
 
 ### Questions to Answer for 75% Grade on Challenge
@@ -605,15 +373,11 @@ plt.show()
 
 ### Questions to Answer for 85% Grade on Challenge
 
-2. **R vs Python Implementation Analysis:** Provide a thorough analysis of question 2, including investigation of the official documentation for both `rpart` (R) and `sklearn.tree.DecisionTreeRegressor` (Python). Your analysis should explain the technical differences and provide a reasoned opinion about which implementation handles categorical variables better.
+2. **R vs Python Implementation Analysis:** Provide a thorough analysis of question 2, including investigation of the official documentation for both `rpart` (R) and `sklearn.tree.DecisionTreeRegressor` (Python). Your analysis should explain the technical differences and provide a reasoned opinion about which implementation handles categorical variables better.  You do NOT have to run R-code.
 
-### Questions to Answer for 95% Grade on Challenge
+### Questions to Answer for 95% - 100% Grade on Challenge
 
-3. **Professional Presentation:** Your discussion answers should be written in a professional, engaging style that would be appropriate for a business audience. Avoid technical jargon and focus on practical implications.  Use Quarto markdown linking to create a link to the discussion section from the top of the page (see https://quarto.org/docs/authoring/cross-references.html#sections).
-
-### Questions to Answer for 100% Grade on Challenge
-
-4. **Documentation Integration:** For question 2, include a specific quote from the official documentation of `sklearn.tree.DecisionTreeRegressor` that supports your analysis. 
+3. **Professional Presentation:** Your discussion answers should be written in a professional, engaging style that would be appropriate for a business audience learning about one-hot encoding and decision trees. Avoid technical jargon and focus on practical implications.  Include a specific quote from the official documentation of `sklearn.tree.DecisionTreeRegressor` that supports your analysis. 
 
 ## Submission Checklist ✅
 
@@ -637,11 +401,12 @@ plt.show()
 
 **95% Grade Requirements:**
 
-- [ ] Professional presentation style appropriate for business audience with links to the discussion section from the top of the page (see https://quarto.org/docs/authoring/cross-references.html#sections).
+- [ ] Professional presentation style appropriate for business audience.
+- [ ] Specific quote from official documentation of `sklearn.tree.DecisionTreeRegressor` supporting your analysis
 
 **100% Grade Requirements:**
 
-- [ ] Specific quote from official documentation of `sklearn.tree.DecisionTreeRegressor` supporting your analysis
+- [ ] Note on the current state of the art in decision tree implementation for categorical variables in Python.
 
 **Report Quality (Critical for Higher Grades):**
 
